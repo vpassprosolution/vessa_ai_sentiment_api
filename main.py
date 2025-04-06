@@ -71,3 +71,36 @@ def get_metal_sentiment(symbol: str):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/sentiment/others")
+def get_other_sentiment(symbol: str):
+    cache_key = f"sentiment_others_{symbol}"
+    cached = redis_client.get(cache_key)
+
+    if cached:
+        return {"symbol": symbol, "sentiment": cached, "cached": True}
+
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT result, generated_at 
+            FROM ai_sentiment_output 
+            WHERE symbol = %s 
+            ORDER BY generated_at DESC LIMIT 1
+        """, (symbol,))
+
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if row:
+            result, timestamp = row
+            redis_client.setex(cache_key, 43200, result)  # 12 hours
+            return {"symbol": symbol, "sentiment": result, "last_updated": str(timestamp), "cached": False}
+        else:
+            raise HTTPException(status_code=404, detail="Sentiment not found.")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
