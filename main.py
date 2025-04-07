@@ -64,7 +64,7 @@ def get_metal_sentiment(symbol: str):
 
         if row:
             result, timestamp = row
-            redis_client.setex(cache_key, 43200, result)  # 12 hours
+            redis_client.setex(cache_key, 600, result)  
             return {"symbol": symbol, "sentiment": result, "last_updated": str(timestamp), "cached": False}
         else:
             raise HTTPException(status_code=404, detail="Sentiment not found.")
@@ -97,7 +97,7 @@ def get_other_sentiment(symbol: str):
 
         if row:
             result, timestamp = row
-            redis_client.setex(cache_key, 43200, result)  # 12 hours
+            redis_client.setex(cache_key, 600, result)  
             return {"symbol": symbol, "sentiment": result, "last_updated": str(timestamp), "cached": False}
         else:
             raise HTTPException(status_code=404, detail="Sentiment not found.")
